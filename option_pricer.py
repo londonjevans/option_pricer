@@ -162,9 +162,8 @@ def get_vols(asset, d_expiry, d_strike, option):
                 result = ws.recv()
                 
                 vol_df = pd.read_json(result).reset_index()
-            except Exception as e:
-                print(e)
-                st.write(e)
+            except:
+                continue
     
             
         vol_df = pd.DataFrame(vol_df.iloc[1].params).iloc[0]
@@ -172,8 +171,8 @@ def get_vols(asset, d_expiry, d_strike, option):
         offer = vol_df['ask_iv']
         
         return bid, offer
-    except Exception as e:
-        st.write(e)
+    except:
+        st.write('Error getting data from Deribit')
 
 def d1(S,K,T,r,sigma):
     return(log(S/K)+(r+sigma**2/2.)*T)/(sigma*sqrt(T))
@@ -387,7 +386,6 @@ if asset:
               b_vol, o_vol = get_vols(asset, str_dbt_expi, dbt_strike, option_type)
               
           except Exception as e:
-              st.write(e)
               b_vol=70
               o_vol = 70
       else:
