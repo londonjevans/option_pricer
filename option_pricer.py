@@ -12,11 +12,9 @@ import streamlit as st
 import time 
 import numpy as np
 import requests
-import matplotlib.pyplot as plt
-from math import log, sqrt, pi, exp
+from math import log, sqrt, exp
 from scipy.stats import norm
-from datetime import datetime, date, timedelta
-from pandas import DataFrame
+from datetime import datetime, timedelta
 import seaborn as sns
 import websocket
 import json
@@ -348,13 +346,14 @@ if asset:
   expiry = expiry.replace(hour=hour_of_expiry_utc, minute=00, second=00, microsecond=0)
 
   fraction_of_year = (expiry-now).total_seconds()/60/60/24/365
-
-  if now.date() > custom_expiry:
-    dbt_expiry = min(expiries, key=lambda x:abs(x-expiry.timestamp()))
-  else:
-    dbt_expiry = min(expiries, key=lambda x:abs(x-dt_custom_expiry.timestamp()))
+  
+  if expiries:
+      if now.date() > custom_expiry:
+        dbt_expiry = min(expiries, key=lambda x:abs(x-expiry.timestamp()))
+      else:
+        dbt_expiry = min(expiries, key=lambda x:abs(x-dt_custom_expiry.timestamp()))
     
-  str_dbt_expi = datetime.fromtimestamp(dbt_expiry).strftime('%d%b%y').upper()
+      str_dbt_expi = datetime.fromtimestamp(dbt_expiry).strftime('%d%b%y').upper()
 
   custom_strike = st.sidebar.number_input("Custom Strike", key='first', on_change=update_first)
   
