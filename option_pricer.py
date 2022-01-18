@@ -382,7 +382,8 @@ if asset:
           
       except Exception as e:
           st.write(e)
-          b_vol, o_vol = 70
+          b_vol=70
+          o_vol = 70
   else:
       eth_price=get_cbs('ETH')
       strikes = eth_strikes[dbt_expiry]
