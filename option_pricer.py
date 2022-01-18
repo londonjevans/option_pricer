@@ -586,8 +586,10 @@ if asset:
         assets = [asset]
     for a in assets:
  
-              
-        source = get_hist(a)
+        try:      
+            source = get_hist(a)
+        except:
+            st.write('No Data for {}'.format(asset))
       
         if len(source) > 0:
             
