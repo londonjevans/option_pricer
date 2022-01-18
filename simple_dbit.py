@@ -13,8 +13,9 @@ import websocket
 import json
 import collections
 
+@st.cache(ttl=2592000)
 def get_instruments():
-    
+    st.write('Getting Instrument Data')
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
     
 
@@ -93,7 +94,7 @@ def get_instruments():
     times_dic = dict(zip(expiries, timestamps))
     
     
-    
+    st.write('Finished Getting Instrument Data')
     return ES, BS, expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments
 
 ES, BS, xs, eth_strikes_per, btc_strikes_per, times_dic, btc_instruments, eth_instruments = get_instruments()
