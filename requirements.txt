@@ -1,5 +1,5 @@
 scipy==1.7.1
 hmac
-openssl==1.1.1l 
+openssl
 secrets
 hashlib
