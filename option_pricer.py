@@ -210,7 +210,7 @@ def get_pk(price_data, window=30, trading_periods=365, clean=True):
         return result
 
 tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
-
+tickers.append('MIR')
 price = 0
 
 def reset_price():
