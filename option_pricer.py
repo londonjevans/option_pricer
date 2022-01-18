@@ -585,14 +585,14 @@ if asset:
     if len(assets) == 0:
         assets = [asset]
     for a in assets:
-        for i in range(3):     
-          try:        
+ 
+        try:        
             source = get_hist(a)
-          except:
+        except:
             st.write('Error getting data, trying again')
             time.sleep(5)
             continue
-          break
+        break
       
         if len(source) > 0:
             
