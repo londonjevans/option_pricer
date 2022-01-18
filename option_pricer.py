@@ -15,6 +15,7 @@ import requests
 from math import log, sqrt, exp
 from scipy.stats import norm
 from datetime import datetime, timedelta
+import matpltlib.pyplot as plt
 import seaborn as sns
 import websocket
 import json
