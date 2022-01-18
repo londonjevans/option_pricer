@@ -107,9 +107,11 @@ def get_prices(btc_instruments, eth_instruments):
     btc_puts =pd.DataFrame(columns=xs, index=BS, data=0).sort_index()
     
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
-    
+    count=0
     for ins in btc_instruments + eth_instruments:
-        
+        count+=1
+        if count%50==0:
+            ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
         print(ins)
 
         ticker = ins.split('-')[0]
