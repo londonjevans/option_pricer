@@ -434,7 +434,7 @@ if asset:
       try:
         eth_vol, underlying = get_single(ins)
 
-        fwd_yield = (((underlying-eth_price)/price)/fraction_dbit)*100
+        fwd_yield = (((underlying-eth_price)/eth_price)/fraction_dbit)*100
         
       except Exception as e:
           st.write(e)
