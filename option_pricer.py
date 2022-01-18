@@ -29,13 +29,17 @@ st.write("""
 Enter the required fields
 
 """)
-@st.cache(ttl=2592000)
+@st.cache(ttl=2592000, suppress_st_warning=True)
 def get_instruments():
-    
+    st.write('Getting Instrument Data')
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
     
 
     expiries = []
+    eth_strikes = []
+    btc_strikes = []
+    btc_instruments = []
+    eth_instruments = []
     btc_strikes_exp = collections.defaultdict(list)
     eth_strikes_exp = collections.defaultdict(list)
     
@@ -56,13 +60,15 @@ def get_instruments():
     try:
         result = ws.recv()
     except Exception as e:
-        st.write(e)
+        print(e)
     
     data = pd.read_json(result).reset_index()
     
     for d in data.result:
         btc_strikes_exp[d['expiration_timestamp']/1000].append(int(d['strike']))
+        btc_strikes.append(int(d['strike']))
         expiries.append(d['expiration_timestamp']/1000)
+        btc_instruments.append(d['instrument_name'])
     
     expiries = list(dict.fromkeys(expiries))
     expiries = [n for n in expiries]
@@ -85,94 +91,92 @@ def get_instruments():
     try:
         result = ws.recv()
     except Exception as e:
-        st.write(e)
+        print(e)
     
     data = pd.read_json(result).reset_index()
     
     for d in data.result:
         eth_strikes_exp[d['expiration_timestamp']/1000].append(int(d['strike']))
+        eth_strikes.append(int(d['strike']))
+        eth_instruments.append(d['instrument_name'])
     
+    timestamps = expiries
+    expiries = [datetime.fromtimestamp(x).strftime('%d%b%y').upper() for x in expiries]
+    eth_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in eth_strikes_exp.items()}
+    btc_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in btc_strikes_exp.items()}
+    ES = list(set(eth_strikes))
+    BS = list(set(btc_strikes))
+    
+    times_dic = dict(zip(expiries, timestamps))
+    for k, v in times_dic.items():
+        times_dic[k]= [v, (datetime.fromtimestamp(v)-datetime.now()).days/365.25]
+    
+    st.write('Finished Getting Instrument Data')
+    return ES, BS, expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments
 
-    
-    return eth_strikes_exp, btc_strikes_exp, expiries
+ES, BS, str_expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments = get_instruments()
 
-@st.cache(ttl=3600)
-def get_futs(asset, price):
+# def get_vols(asset, d_expiry, d_strike, option):
     
+#     try:
+#         vol_df = pd.DataFrame()
+        
+#         ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
+       
+#         msg = \
+#             {"jsonrpc": "2.0",
+#              "method": "public/subscribe",
+#              "id": 42,
+#              "params": {
+#                 "channels": ["ticker.{}-{}-{}-{}.raw".format(asset, d_expiry, d_strike, option)]}
+#             }
+        
+#         ws.send(json.dumps(msg))
+        
+#         while len(vol_df) < 2:
+#             try:
+#                 result = ws.recv()
+                
+#                 vol_df = pd.read_json(result).reset_index()
+#             except:
+#                 continue
+    
+            
+#         vol_df = pd.DataFrame(vol_df.iloc[1].params).iloc[0]
+#         bid = vol_df['bid_iv'] 
+#         offer = vol_df['ask_iv']
+        
+#         return bid, offer
+#     except:
+#         st.write('Error getting data from Deribit, please continue with manual inputs')
+
+def get_single(ins):
     
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
     
     msg = \
-    {
+        {
       "jsonrpc" : "2.0",
-      "id" : 9344,
-      "method" : "public/get_book_summary_by_currency",
+      "id" : 8106,
+      "method" : "public/ticker",
       "params" : {
-        "currency" : asset,
-        "kind" : "future"
+        "instrument_name" : ins
       }
     }
     
-        
-    
-        
     ws.send(json.dumps(msg))
-    
-    futures_result = json.loads(ws.recv())
-        
-    futs_data = pd.DataFrame(futures_result['result'])[['instrument_name', 'mid_price']]
-    
-    futs_data['timestamp_of_exp'] = 0
-    futs_data['annualised_yield'] = 0
-    
-    pairs = {x:[datetime.fromtimestamp(x).strftime('%d%b%y').upper()] for x in expiries}
-    
-    for k, v in pairs.items():
-        for i in range(len(futs_data)):
-            if pairs[k][0] in futs_data.iloc[i]['instrument_name']:
-                futs_data.loc[futs_data.index == i, 'timestamp_of_exp'] = k
-                futs_data.loc[futs_data.index == i,'annualised_yield'] = (futs_data.iloc[i]['mid_price'] - price)/price/ ((k-datetime.now().timestamp())/31536000)*100
-    
-    return futs_data
-
-
-eth_strikes, btc_strikes, expiries = get_instruments()
-
-str_expiries = [datetime.fromtimestamp(x).strftime('%d%b%y').upper() for x in expiries]
-
-def get_vols(asset, d_expiry, d_strike, option):
-    
     try:
-        vol_df = pd.DataFrame()
-        
-        ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
-       
-        msg = \
-            {"jsonrpc": "2.0",
-             "method": "public/subscribe",
-             "id": 42,
-             "params": {
-                "channels": ["ticker.{}-{}-{}-{}.raw".format(asset, d_expiry, d_strike, option)]}
-            }
-        
-        ws.send(json.dumps(msg))
-        
-        while len(vol_df) < 2:
-            try:
-                result = ws.recv()
-                
-                vol_df = pd.read_json(result).reset_index()
-            except:
-                continue
+        result = ws.recv()
+    except Exception as e:
+        print(e)
     
-            
-        vol_df = pd.DataFrame(vol_df.iloc[1].params).iloc[0]
-        bid = vol_df['bid_iv'] 
-        offer = vol_df['ask_iv']
-        
-        return bid, offer
-    except:
-        st.write('Error getting data from Deribit, please continue with manual inputs')
+    prices = pd.read_json(result)
+    
+    mark = prices.loc['mark_iv']['result']
+    underlying = prices.loc['underlying_price']['result']
+    
+    return mark, underlying
+
 
 def d1(S,K,T,r,sigma):
     return(log(S/K)+(r+sigma**2/2.)*T)/(sigma*sqrt(T))
@@ -212,6 +216,7 @@ def get_pk(price_data, window=30, trading_periods=365, clean=True):
 tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
 tickers.append('MIR')
 price = 0
+expiries = [v[0] for k, v in times_dic.items()]
 
 def reset_price():
     price=0
@@ -276,7 +281,7 @@ def get_hist(asset):
     return df_hist
 
 @st.cache(suppress_st_warning=True, ttl=86400)
-def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type):
+def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
     
     try:
         assets = [asset, 'ETH']
@@ -300,16 +305,13 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type):
                 
                 
                 vols['{}'.format(a)] = get_pk(data, window=30)
-                chart_data = vols.iloc[-365:]
                 
             st.write('Current {} day realised vol for {} is {}%'.format(30, a, round(vols['{}'.format(a)].iloc[-2]*100, 2)))
-        
-        eth_vol = get_vols('ETH', str_dbt_expi, dbt_strike, option_type)
         
         alt_30d = vols['{}'.format(asset)].iloc[-2]
         eth_30d = vols['ETH'].iloc[-2]
         
-        premium = round(((eth_vol[0]+eth_vol[1])/2-eth_30d*100)*max(alt_30d/eth_30d, 1), 2)
+        premium = round((eth_vol-eth_30d*100)*max(alt_30d/eth_30d, 1), 2)
         
         alt_mid = round(premium+alt_30d*100, 2)
         
@@ -353,12 +355,8 @@ if asset:
   
   now = datetime.now()
   
-
-  
   spread = st.sidebar.number_input("Spread each side", value=3)/100
   
-
-
   days_to_expiry = st.sidebar.number_input("Days to Expiry", value=7)
   
   custom_expiry = st.sidebar.date_input("Custom Expiry Date - N.B. Do NOT need both this and Expiry days, BUT you do need to make sure the UTC hour of expiry is correct", (now-timedelta(days=1)))
@@ -377,13 +375,15 @@ if asset:
 
   fraction_of_year = (expiry-now).total_seconds()/60/60/24/365
   
-  if expiries:
-      if now.date() > custom_expiry:
+
+  if now.date() > custom_expiry:
         dbt_expiry = min(expiries, key=lambda x:abs(x-expiry.timestamp()))
-      else:
+  else:
         dbt_expiry = min(expiries, key=lambda x:abs(x-dt_custom_expiry.timestamp()))
     
-      str_dbt_expi = datetime.fromtimestamp(dbt_expiry).strftime('%d%b%y').upper()
+  str_dbt_expi = datetime.fromtimestamp(dbt_expiry).strftime('%d%b%y').upper()
+  
+  fraction_dbit = times_dic[str_dbt_expi][1]
 
   custom_strike = st.sidebar.number_input("Custom Strike", key='first', on_change=update_first)
   
@@ -392,45 +392,50 @@ if asset:
     default_moneyness = 95
   else: 
     default_moneyness = round(custom_strike/price*100,2)
+    
+  
   
   if asset in ['BTC', 'ETH']:
       
-      futs_data = get_futs(asset, price)
-
       if asset == 'BTC':
-          strikes = btc_strikes[dbt_expiry]
+          strikes = btc_strikes_exp[str_dbt_expi]
       else:
-          strikes = eth_strikes[dbt_expiry]
+          strikes = eth_strikes_exp[str_dbt_expi]
           
       dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*price)))
       
-      fwd_yield = futs_data.loc[futs_data['instrument_name'].str.contains(str_dbt_expi)].annualised_yield.values[0]
-      
-      if len(expiries) > 5:
-          try:
-              b_vol, o_vol = get_vols(asset, str_dbt_expi, dbt_strike, option_type)
-              
-          except Exception as e:
-              b_vol=70
-              o_vol = 70
-      else:
-          st.write('No Data From Deribit Available')
-          b_vol=70
-          o_vol = 70
+      ins = '{}-{}-{}-{}'.format(asset, str_dbt_expi, dbt_strike, option_type)
+     
+      try:
+        b_vol, underlying = get_single(ins)
+        o_vol=b_vol
+        fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
+        
+      except:
+        b_vol=70
+        o_vol = 70
+
         
   else:
-      if len(expiries) > 5:
-          eth_price=get_cbs('ETH')
-          strikes = eth_strikes[dbt_expiry]
-          dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*eth_price)))
-          alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type)
-          b_vol = alt_vol
-          o_vol = alt_vol
-          futs_data = get_futs('ETH', get_cbs('ETH'))
-          fwd_yield = futs_data.loc[futs_data['instrument_name'].str.contains(str_dbt_expi)].annualised_yield.values[0]
-      else:
-          b_vol = 70
-          o_vol = 70
+      
+      eth_price=get_cbs('ETH')
+      strikes = eth_strikes_exp[str_dbt_expi]
+      dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*eth_price)))
+      ins = '{}-{}-{}-{}'.format('ETH', str_dbt_expi, dbt_strike, option_type)
+      
+      try:
+        eth_vol, underlying = get_single(ins)
+
+        fwd_yield = (((underlying-eth_price)/price)/fraction_dbit)*100
+        
+      except Exception as e:
+          st.write(e)
+          fwd_yield = 0
+          
+      alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol)
+      b_vol = alt_vol
+      o_vol = alt_vol
+
   
   forward_yield = st.sidebar.number_input("Forward Yield - e.g. for 5% input 5", value=fwd_yield)/100    
   
@@ -464,7 +469,7 @@ if asset:
             c = round(price*moneyness, 0)
             bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
             offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
-        elif price > 1 and price < 100:
+        elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
             bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
             offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
@@ -489,7 +494,7 @@ if asset:
               c = round(price*moneyness, 0)
               bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
               offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
-          elif price > 1:
+          elif price > 2 and price < 100:
               c = round(price*moneyness, 2)
               bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
               offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
@@ -517,7 +522,7 @@ if asset:
             c = round(price*moneyness, 0)
             bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
             offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
-        elif price > 1 and price < 100:
+        elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
             bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
             offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
@@ -544,7 +549,7 @@ if asset:
             c = round(price*moneyness, 0)
             bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
             offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
-        elif price > 1:
+        elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
             bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
             offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
