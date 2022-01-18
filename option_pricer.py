@@ -416,12 +416,14 @@ if asset:
      
       try:
         b_vol, underlying = get_single(ins)
-        o_vol=b_vol
+        
+        o_vol=b_vol+spread*100
+        b_vol=b_vol-spread*100
         fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
         
       except:
-        b_vol=70
-        o_vol = 70
+        b_vol=70-spread*100
+        o_vol = 70+spread*100
 
         
   else:
@@ -441,8 +443,8 @@ if asset:
           fwd_yield = 0
           
       alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol)
-      b_vol = alt_vol
-      o_vol = alt_vol
+      b_vol = alt_vol-spread*100
+      o_vol = alt_vol+spread*100
 
   
   forward_yield = st.sidebar.number_input("Forward Yield - e.g. for 5% input 5", value=fwd_yield)/100    
@@ -472,21 +474,21 @@ if asset:
 
     if custom_strike:
       if option_type == 'C':
-        cdelta = round(call_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)*100, 2)
+        cdelta = round(call_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
         if price > 100:  
             c = round(price*moneyness, 0)
-            bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
-            offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
+            bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 2)
+            offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 2)
         elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
-            bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
-            offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
+            bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 4)
+            offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 4)
         else:
             c = price*moneyness
-            bid = bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)
-            offer = bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread)
+            bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
+            offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
     
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round((bid_vol-spread)*100, 2), round((offer_vol+spread)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
         st.write('')
         st.write('If Client Sells:') 
@@ -500,19 +502,19 @@ if asset:
       else:
           if price > 100:  
               c = round(price*moneyness, 0)
-              bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
-              offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
+              bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 2)
+              offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 2)
           elif price > 2 and price < 100:
               c = round(price*moneyness, 2)
-              bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
-              offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
+              bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 4)
+              offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 4)
           else:
               c = price*moneyness
-              bid = bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)
-              offer = bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread)          
-          pdelta = round(put_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)*100, 2)
+              bid = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
+              offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol)   , 6)       
+          pdelta = round(put_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
     
-          st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round((bid_vol-spread)*100, 2), round((offer_vol+spread)*100, 2), pdelta))
+          st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
           st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
           st.write('')
           
@@ -528,20 +530,20 @@ if asset:
       if option_type == 'C':
         if price > 100:  
             c = round(price*moneyness, 0)
-            bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
-            offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
+            bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 2)
+            offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 2)
         elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
-            bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
-            offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
+            bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 4)
+            offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 4)
         else:
             c = price*moneyness
-            bid = bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)
-            offer = bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread)
+            bid = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
+            offer = round(bs_call(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
 
-        cdelta = round(call_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)*100, 2)
+        cdelta = round(call_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round((bid_vol-spread)*100, 2), round((offer_vol+spread)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
         st.write('') 
         st.write('If Client Sells:') 
@@ -555,20 +557,20 @@ if asset:
       else:
         if price > 100:  
             c = round(price*moneyness, 0)
-            bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 2)
-            offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 2)
+            bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 2)
+            offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 2)
         elif price > 2 and price < 100:
             c = round(price*moneyness, 2)
-            bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread), 4)
-            offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread), 4)
+            bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 4)
+            offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 4)
         else:
             c = price*moneyness
-            bid = bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)
-            offer = bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol+spread)
+            bid = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
+            offer = round(bs_put(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
             
-        pdelta = round(put_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol-spread)*100, 2)
+        pdelta = round(put_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round((bid_vol-spread)*100, 2), round((offer_vol+spread)*100, 2),pdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${}**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
         st.write('') 
         st.write('') 
