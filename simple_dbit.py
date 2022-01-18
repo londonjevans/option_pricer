@@ -13,7 +13,7 @@ import websocket
 import json
 import collections
 
-@st.cache(ttl=2592000)
+@st.cache(ttl=2592000, suppress_st_warning=True)
 def get_instruments():
     st.write('Getting Instrument Data')
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
@@ -161,7 +161,7 @@ def get_prices(btc_instruments, eth_instruments):
     btc_calls.to_csv('btc_calls.csv')
     btc_puts.to_csv('btc_puts.csv')
     
-    st.write(eth_calls)
+    print(eth_calls)
     return eth_calls, eth_puts, btc_calls, btc_puts
 
 eth_calls, eth_puts, btc_calls, btc_puts = get_prices(btc_instruments, eth_instruments)
