@@ -7,6 +7,7 @@ Created on Tue Jan 18 12:11:27 2022
 """
 
 import pandas as pd
+import streamlit as st
 from datetime import datetime, timedelta
 import websocket
 import json
@@ -111,6 +112,7 @@ def get_prices(btc_instruments, eth_instruments):
     for ins in btc_instruments + eth_instruments:
         count+=1
         if count%50==0:
+            print(count)
             ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
         print(ins)
 
@@ -158,6 +160,7 @@ def get_prices(btc_instruments, eth_instruments):
     btc_calls.to_csv('btc_calls.csv')
     btc_puts.to_csv('btc_puts.csv')
     
+    st.write(eth_calls)
     return eth_calls, eth_puts, btc_calls, btc_puts
 
 eth_calls, eth_puts, btc_calls, btc_puts = get_prices(btc_instruments, eth_instruments)
