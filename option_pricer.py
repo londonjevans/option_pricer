@@ -142,35 +142,38 @@ str_expiries = [datetime.fromtimestamp(x).strftime('%d%b%y').upper() for x in ex
 
 def get_vols(asset, d_expiry, d_strike, option):
     
-    vol_df = pd.DataFrame()
-    
-    ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
-   
-    msg = \
-        {"jsonrpc": "2.0",
-         "method": "public/subscribe",
-         "id": 42,
-         "params": {
-            "channels": ["ticker.{}-{}-{}-{}.raw".format(asset, d_expiry, d_strike, option)]}
-        }
-    
-    ws.send(json.dumps(msg))
-    
-    while len(vol_df) < 2:
-        try:
-            result = ws.recv()
-            
-            vol_df = pd.read_json(result).reset_index()
-        except Exception as e:
-            print(e)
-            st.write(e)
-
+    try:
+        vol_df = pd.DataFrame()
         
-    vol_df = pd.DataFrame(vol_df.iloc[1].params).iloc[0]
-    bid = vol_df['bid_iv'] 
-    offer = vol_df['ask_iv']
+        ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
+       
+        msg = \
+            {"jsonrpc": "2.0",
+             "method": "public/subscribe",
+             "id": 42,
+             "params": {
+                "channels": ["ticker.{}-{}-{}-{}.raw".format(asset, d_expiry, d_strike, option)]}
+            }
+        
+        ws.send(json.dumps(msg))
+        
+        while len(vol_df) < 2:
+            try:
+                result = ws.recv()
+                
+                vol_df = pd.read_json(result).reset_index()
+            except Exception as e:
+                print(e)
+                st.write(e)
     
-    return bid, offer
+            
+        vol_df = pd.DataFrame(vol_df.iloc[1].params).iloc[0]
+        bid = vol_df['bid_iv'] 
+        offer = vol_df['ask_iv']
+        
+        return bid, offer
+    except Exception as e:
+        st.write(e)
 
 def d1(S,K,T,r,sigma):
     return(log(S/K)+(r+sigma**2/2.)*T)/(sigma*sqrt(T))
