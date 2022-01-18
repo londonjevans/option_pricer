@@ -235,14 +235,20 @@ asset = st.sidebar.selectbox("Asset - e.g. ETH", options=tickers, index=tickers.
 
 
 def get_spot(asset):
-    url = 'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={}&to_currency=USD&apikey=W7Y4ZQP4R37OFPRO'.format(asset)
-    r = requests.get(url)
     
-    df = pd.DataFrame(r.json()).T
+    try:
+        url = 'https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={}&to_currency=USD&apikey=W7Y4ZQP4R37OFPRO'.format(asset)
+        r = requests.get(url)
+        
+        df = pd.DataFrame(r.json()).T
+        
+        price = pd.to_numeric(df.iloc[0, 4])
     
-    price = pd.to_numeric(df.iloc[0, 4])
-
-    return price
+        return price
+    except:
+        st.write('Error retrieving spot price please enter manually')
+        price = st.number_input('Manual Spot Price:')
+        return price
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=86400)
 def get_hist(asset):
@@ -325,11 +331,10 @@ if asset:
       price = get_spot(asset)
     if price == None:
       st.write('fetching AV price')
-      try:
-          price = get_spot(asset)
-      except:
-          st.write('Error geting spot price, please input manually')
-          st.number_input('Manual Spot Price:')
+      
+      price = get_spot(asset)
+
+          
 
    
   st.write('Spot price of {} is {}'.format(asset, price))
