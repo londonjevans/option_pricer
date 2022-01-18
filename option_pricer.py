@@ -325,7 +325,11 @@ if asset:
       price = get_spot(asset)
     if price == None:
       st.write('fetching AV price')
-      price = get_spot(asset)
+      try:
+          price = get_spot(asset)
+      except:
+          st.write('Error geting spot price, please input manually')
+          st.number_input('Manual Spot Price:')
 
    
   st.write('Spot price of {} is {}'.format(asset, price))
