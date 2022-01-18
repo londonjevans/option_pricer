@@ -269,16 +269,24 @@ def get_spot(asset):
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=86400)
 def get_hist(asset):
-    url = 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol={}&market=USD&apikey=W7Y4ZQP4R37OFPRO'.format(asset)
-    r = requests.get(url)
     
-    df_hist = pd.DataFrame(r.json()['Time Series (Digital Currency Daily)']).T.iloc[:, [0, 2, 4, 6]]
-    
-    df_hist = df_hist.rename(columns={'1a. open (USD)':'open', '2a. high (USD)':'high', '3a. low (USD)':'low', '4a. close (USD)':'close'})
-    
-    df_hist = df_hist.apply(pd.to_numeric).sort_index()
-    
-    return df_hist
+    try:
+        url = 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol={}&market=USD&apikey=W7Y4ZQP4R37OFPRO'.format(asset)
+        r = requests.get(url)
+        
+        df_hist = pd.DataFrame(r.json()['Time Series (Digital Currency Daily)']).T.iloc[:, [0, 2, 4, 6]]
+        
+        df_hist = df_hist.rename(columns={'1a. open (USD)':'open', '2a. high (USD)':'high', '3a. low (USD)':'low', '4a. close (USD)':'close'})
+        
+        df_hist = df_hist.apply(pd.to_numeric).sort_index()
+        done = True
+    except:
+        st.write('No historical price data available for {}'.format(asset))
+        done=False
+        
+    if done:   
+        return df_hist
+
 
 @st.cache(suppress_st_warning=True, ttl=86400)
 def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
@@ -289,7 +297,7 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
         vols = pd.DataFrame()
             
         for a in assets:
-            for i in range(10):     
+            for i in range(2):     
               try:        
                 source = get_hist(a)
               except:
@@ -590,7 +598,7 @@ if asset:
     if len(assets) == 0:
         assets = [asset]
     for a in assets:
- 
+
         try:      
             source = get_hist(a)
         except:
