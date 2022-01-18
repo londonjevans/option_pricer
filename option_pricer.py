@@ -573,7 +573,7 @@ if asset:
     if len(assets) == 0:
         assets = [asset]
     for a in assets:
-        for i in range(10):     
+        for i in range(3):     
           try:        
             source = get_hist(a)
           except:
