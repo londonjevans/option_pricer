@@ -377,22 +377,32 @@ if asset:
       
       fwd_yield = futs_data.loc[futs_data['instrument_name'].str.contains(str_dbt_expi)].annualised_yield.values[0]
       
-      try:
-          b_vol, o_vol = get_vols(asset, str_dbt_expi, dbt_strike, option_type)
-          
-      except Exception as e:
-          st.write(e)
+      if len(expiries) > 5:
+          try:
+              b_vol, o_vol = get_vols(asset, str_dbt_expi, dbt_strike, option_type)
+              
+          except Exception as e:
+              st.write(e)
+              b_vol=70
+              o_vol = 70
+      else:
+          st.write('No Data From Deribit Available')
           b_vol=70
           o_vol = 70
+        
   else:
-      eth_price=get_cbs('ETH')
-      strikes = eth_strikes[dbt_expiry]
-      dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*eth_price)))
-      alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type)
-      b_vol = alt_vol
-      o_vol = alt_vol
-      futs_data = get_futs('ETH', get_cbs('ETH'))
-      fwd_yield = futs_data.loc[futs_data['instrument_name'].str.contains(str_dbt_expi)].annualised_yield.values[0]
+      if len(expiries) > 5:
+          eth_price=get_cbs('ETH')
+          strikes = eth_strikes[dbt_expiry]
+          dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*eth_price)))
+          alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type)
+          b_vol = alt_vol
+          o_vol = alt_vol
+          futs_data = get_futs('ETH', get_cbs('ETH'))
+          fwd_yield = futs_data.loc[futs_data['instrument_name'].str.contains(str_dbt_expi)].annualised_yield.values[0]
+      else:
+          b_vol = 70
+          o_vol = 70
   
   forward_yield = st.sidebar.number_input("Forward Yield - e.g. for 5% input 5", value=fwd_yield)/100    
   
