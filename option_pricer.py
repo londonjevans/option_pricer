@@ -338,7 +338,9 @@ if asset:
 
   hour_of_expiry_utc = st.sidebar.number_input("UTC Hour of Expiry", value=15)
   
-  dt_custom_expiry = datetime(custom_expiry.year, custom_expiry.month, custom_expiry.day, hour_of_expiry_utc, 0)
+  
+  if custom_expiry > now.date():
+      dt_custom_expiry = datetime(custom_expiry.year, custom_expiry.month, custom_expiry.day, hour_of_expiry_utc, 0)
   
   option_type = st.sidebar.selectbox("Call or Put", options=('C', 'P'), index=1)
 
