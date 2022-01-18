@@ -586,13 +586,8 @@ if asset:
         assets = [asset]
     for a in assets:
  
-        try:        
-            source = get_hist(a)
-        except:
-            st.write('Error getting data, trying again')
-            time.sleep(5)
-            continue
-        break
+              
+        source = get_hist(a)
       
         if len(source) > 0:
             
