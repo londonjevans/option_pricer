@@ -301,6 +301,7 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type):
         return alt_mid
     except:
         st.write('Error getting data from Deribit, please continue with manual inputs')
+        return 70
 
 def get_cbs(asset):
     now = datetime.now()
