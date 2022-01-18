@@ -172,7 +172,7 @@ def get_vols(asset, d_expiry, d_strike, option):
         
         return bid, offer
     except:
-        st.write('Error getting data from Deribit')
+        st.write('Error getting data from Deribit, please continue with manual inputs')
 
 def d1(S,K,T,r,sigma):
     return(log(S/K)+(r+sigma**2/2.)*T)/(sigma*sqrt(T))
@@ -260,44 +260,47 @@ def get_hist(asset):
 @st.cache(suppress_st_warning=True, ttl=86400)
 def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type):
     
-    assets = [asset, 'ETH']
-    
-    vols = pd.DataFrame()
+    try:
+        assets = [asset, 'ETH']
         
-    for a in assets:
-        for i in range(10):     
-          try:        
-            source = get_hist(a)
-          except:
-            st.write('Error getting data, trying again')
-            time.sleep(5)
-            continue
-          break
+        vols = pd.DataFrame()
+            
+        for a in assets:
+            for i in range(10):     
+              try:        
+                source = get_hist(a)
+              except:
+                st.write('Error getting data, trying again')
+                time.sleep(5)
+                continue
+              break
+            
+            if len(source) > 0:
+                
+                data = source.copy() 
+                data['pk_returns'] = np.log(data.high/data.low)
+                
+                
+                vols['{}'.format(a)] = get_pk(data, window=30)
+                chart_data = vols.iloc[-365:]
+                
+            st.write('Current {} day realised vol for {} is {}%'.format(30, a, round(vols['{}'.format(a)].iloc[-2]*100, 2)))
         
-        if len(source) > 0:
-            
-            data = source.copy() 
-            data['pk_returns'] = np.log(data.high/data.low)
-            
-            
-            vols['{}'.format(a)] = get_pk(data, window=30)
-            chart_data = vols.iloc[-365:]
-            
-        st.write('Current {} day realised vol for {} is {}%'.format(30, a, round(vols['{}'.format(a)].iloc[-2]*100, 2)))
-    
-    eth_vol = get_vols('ETH', str_dbt_expi, dbt_strike, option_type)
-    
-    alt_30d = vols['{}'.format(asset)].iloc[-2]
-    eth_30d = vols['ETH'].iloc[-2]
-    
-    premium = round(((eth_vol[0]+eth_vol[1])/2-eth_30d*100)*max(alt_30d/eth_30d, 1), 2)
-    
-    alt_mid = round(premium+alt_30d*100, 2)
-    
-    st.write('''Based on current IV Premium/DIscount for ETH in relevant strike/expiry, 
-             Mid Price IV for {} is {}%'''.format(asset, alt_mid))
-    
-    return alt_mid
+        eth_vol = get_vols('ETH', str_dbt_expi, dbt_strike, option_type)
+        
+        alt_30d = vols['{}'.format(asset)].iloc[-2]
+        eth_30d = vols['ETH'].iloc[-2]
+        
+        premium = round(((eth_vol[0]+eth_vol[1])/2-eth_30d*100)*max(alt_30d/eth_30d, 1), 2)
+        
+        alt_mid = round(premium+alt_30d*100, 2)
+        
+        st.write('''Based on current IV Premium/DIscount for ETH in relevant strike/expiry, 
+                 Mid Price IV for {} is {}%'''.format(asset, alt_mid))
+        
+        return alt_mid
+    except:
+        st.write('Error getting data from Deribit, please continue with manual inputs')
 
 def get_cbs(asset):
     now = datetime.now()
