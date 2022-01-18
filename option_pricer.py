@@ -218,17 +218,29 @@ def reset_price():
     return price
 
 def update_first():
-    st.session_state.second = round(st.session_state.first/price*100, 2)
+    try:
+        st.session_state.second = round(st.session_state.first/price*100, 2)
+    except:
+        st.write('Error updating related field')
 
 def update_second():
-    st.session_state.first = round(st.session_state.second/100*price, 2)
+    try:
+        st.session_state.first = round(st.session_state.second/100*price, 2)
+    except:
+        st.write('Error updating related field')
     
 def update_third():
-    st.session_state.fourth = round(st.session_state.third/round(price*moneyness, 2), 2)
+    try:
+        st.session_state.fourth = round(st.session_state.third/round(price*moneyness, 2), 2)
+    except:
+        st.write('Error updating related field')
 
 
 def update_fourth():
-    st.session_state.third = round(st.session_state.fourth*round(price*moneyness, 2), 2)
+    try:
+        st.session_state.third = round(st.session_state.fourth*round(price*moneyness, 2), 2)
+    except:
+        st.write('Error updating related field')
 
 asset = st.sidebar.selectbox("Asset - e.g. ETH", options=tickers, index=tickers.index('ETH'), on_change=reset_price)
 
