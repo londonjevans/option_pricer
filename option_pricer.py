@@ -463,6 +463,11 @@ if asset:
   
   client = st.sidebar.text_input('Client Name', value='Rovida')
   
+  settlement_date = now+timedelta(days=2)
+  
+  while settlement_date.weekday() > 4:
+      settlement_date+=timedelta(days=1)
+  
   
   if st.button('Calculate price'):
 
@@ -490,12 +495,12 @@ if asset:
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
         st.write('')
         st.write('If Client Sells:') 
-        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium ${:,}. IM owed by {} to Blockchain.com is ${:,},  net of premium = ${:,}.  Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, asset, round(bid*notional_coin), client, round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), now+timedelta(days=2)))
+        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium ${:,}. IM owed by {} to Blockchain.com is ${:,},  net of premium = ${:,}.  Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, asset, round(bid*notional_coin), client, round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), now+timedelta(days=2)))
+        st.write('Blockchain.com sells, {} buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
       else:
           if price > 100:  
@@ -516,12 +521,12 @@ if asset:
           st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
           st.write('')
           
-          st.write('{} sells, Blockchain.com buys {} {} ${:,} puts expiring {} for ${:,}, total premium ${:,}. IM owed by Rovida to Blockchain.com is ${:,},  net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, round(bid*notional_coin), round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), now+timedelta(days=2)))
+          st.write('{} sells, Blockchain.com buys {} {} ${:,} puts expiring {} for ${:,}, total premium ${:,}. IM owed by Rovida to Blockchain.com is ${:,},  net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, round(bid*notional_coin), round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), settlement_date))
           st.write('') 
           st.write('') 
           st.write('') 
           st.write('If Client Buys:') 
-          st.write('Blockchain.com sells, {} buys {} {} ${:,} puts expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}.Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), now+timedelta(days=2)))
+          st.write('Blockchain.com sells, {} buys {} {} ${:,} puts expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}.Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
 
     else:
@@ -545,12 +550,12 @@ if asset:
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
         st.write('') 
         st.write('If Client Sells:') 
-        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium ${:,}. IM owed by {} to Blockchain.com is ${:,}, net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, asset, round(bid*notional_coin), client, round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), now+timedelta(days=2)))
+        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium ${:,}. IM owed by {} to Blockchain.com is ${:,}, net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, asset, round(bid*notional_coin), client, round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), now+timedelta(days=2)))
+        st.write('Blockchain.com sells, {} buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
       else:
         if price > 100:  
@@ -572,12 +577,12 @@ if asset:
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
         st.write('') 
         st.write('') 
-        st.write('{} sells, Blockchain.com buys {} {} ${:,} puts expiring {} for ${:,}, total premium ${:,}. IM owed by Rovida to Blockchain.com is ${:,}, net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, round(bid*notional_coin), round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), now+timedelta(days=2)))
+        st.write('{} sells, Blockchain.com buys {} {} ${:,} puts expiring {} for ${:,}, total premium ${:,}. IM owed by Rovida to Blockchain.com is ${:,}, net of premium = ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, round(bid*notional_coin), round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys {} {} ${:,} puts expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), now+timedelta(days=2)))
+        st.write('Blockchain.com sells, {} buys {} {} ${:,} puts expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
   st.write('')   
   st.write('') 
