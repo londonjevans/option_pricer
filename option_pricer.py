@@ -389,6 +389,9 @@ if asset:
     
   str_dbt_expi = datetime.fromtimestamp(dbt_expiry).strftime('%d%b%y').upper()
   
+  if str_dbt_expi[0] == '0':
+      str_dbt_expi = str_dbt_expi[1:]
+  
   fraction_dbit = times_dic[str_dbt_expi][1]
 
   custom_strike = st.sidebar.number_input("Custom Strike", key='first', on_change=update_first)
