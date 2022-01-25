@@ -105,6 +105,11 @@ def get_instruments():
             expiries[i] = expiries[i][1:]
     eth_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in eth_strikes_exp.items()}
     btc_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in btc_strikes_exp.items()}
+    
+    for d in [eth_strikes_exp, btc_strikes_exp]:
+        for k, v in d.items():
+            if k[0] == '0':
+                d[k[1:]] = d.pop(k)
     ES = list(set(eth_strikes))
     BS = list(set(btc_strikes))
     
