@@ -221,6 +221,7 @@ def get_pk(price_data, window=30, trading_periods=365, clean=True):
 
 tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
 tickers.append('MIR')
+tickers.append('LOOKS')
 price = 0
 expiries = [v[0] for k, v in times_dic.items()]
 
