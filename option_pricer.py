@@ -258,9 +258,12 @@ def update_fourth():
     except:
         st.write('Error updating related field')
 
-asset = st.sidebar.selectbox("Asset - e.g. ETH", options=tickers, index=tickers.index('ETH'), on_change=reset_price)
-
 man_ticker = st.sidebar.text_input('Enter manual ticker').upper()
+
+if not man_ticker:
+    asset = st.sidebar.selectbox("Asset - e.g. ETH", options=tickers, index=tickers.index('ETH'), on_change=reset_price)
+
+
 
 if man_ticker:
     asset = man_ticker
@@ -345,17 +348,32 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
         st.write('Error getting data from Deribit, please continue with manual inputs')
         return 70
 
-def get_cbs(asset):
+def get_cbs(asset, gran=60):
     now = datetime.now()
     ticker = asset+'-USD'
     start = str(now.date()-timedelta(days=1))
-    gran = 60 # in seconds, {60, 300, 900, 3600, 21600, 86400} , 1 second --> 1 day
     r = f"https://api.pro.coinbase.com/products/{ticker}/candles?start={start}T00:00:00&granularity={gran}"
     j = requests.get(r).json()
 
     df = pd.DataFrame(j)
     price = df.iloc[0, 4]
     return price
+
+def get_cbs_hist(asset, gran=86400):
+
+    now = datetime.now()
+    ticker = asset+'-USD'
+    start = str(now.date()-timedelta(days=1))
+    r = f"https://api.pro.coinbase.com/products/{ticker}/candles?start={start}T00:00:00&granularity={gran}"
+    j = requests.get(r).json()
+
+    df = pd.DataFrame(j)
+    df[0] = pd.to_datetime(df[0], unit='s')
+    df.set_index(0, inplace=True)
+    df.sort_index(inplace=True)
+    df.columns = ('low','high','open','close','volume')
+    
+    return df
 
 if asset:
   
@@ -513,7 +531,7 @@ if asset:
             bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
             offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
     
-        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}** (**{}/{} {}**),      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, forward_price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}** (**{}/{} {}**),      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
         st.write('')
         st.write('If Client Sells:') 
@@ -539,7 +557,7 @@ if asset:
               offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol)   , 6)       
           pdelta = round(put_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
     
-          st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
+          st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
           st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
           st.write('')
           
@@ -568,7 +586,7 @@ if asset:
 
         cdelta = round(call_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
         st.write('') 
         st.write('If Client Sells:') 
@@ -595,7 +613,7 @@ if asset:
             
         pdelta = round(put_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
+        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
         st.write('') 
         st.write('') 
@@ -618,7 +636,7 @@ if asset:
   N = st.number_input("Realised vol window in days", value=30)
   
   assets = st.multiselect('Asset(s) historical vol to chart', options=tickers)      
-  R = st.number_input("Lookback window", value=365)
+  R = st.number_input("Lookback window", value=180)
   
   if st.button('Click for a realised vol calculation on asset'):
     vols = pd.DataFrame()
@@ -629,7 +647,10 @@ if asset:
         try:      
             source = get_hist(a)
         except:
-            st.write('No Data for {}'.format(asset))
+            try:
+                source = get_cbs_hist(a)
+            except:
+                st.write('No Data for {}'.format(asset))
       
         if len(source) > 0:
             
