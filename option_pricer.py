@@ -646,21 +646,23 @@ if asset:
 
         try:      
             source = get_hist(a)
-        except:
+        except:    
+            st.write('No Data for {} from Alpha Vantage, trying Coinbase'.format(asset))
+      
+        if source == None:
             try:
                 source = get_cbs_hist(a)
             except:
                 st.write('No Data for {}'.format(asset))
-      
-        if len(source) > 0:
-            
-            data = source.copy() 
-            data['pk_returns'] = np.log(data.high/data.low)
-            
-            
-            vols['{}'.format(a)] = get_pk(data, window=N)
-            chart_data = vols.iloc[-R:]
-            st.write('Current {} day realised vol for {} is {}%'.format(N, a, round(vols['{}'.format(a)].iloc[-2]*100, 2)))
+        
+        if len(source) > 0:    
+                data = source.copy() 
+                data['pk_returns'] = np.log(data.high/data.low)
+                
+                
+                vols['{}'.format(a)] = get_pk(data, window=N)
+                chart_data = vols.iloc[-R:]
+                st.write('Current {} day realised vol for {} is {}%'.format(N, a, round(vols['{}'.format(a)].iloc[-2]*100, 2)))
             
             
         else:
