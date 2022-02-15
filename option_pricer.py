@@ -375,6 +375,28 @@ def get_cbs_hist(asset, gran=86400):
     
     return df
 
+######### BITFINEX
+# https://api-pub.bitfinex.com/v2/candles/trade:TimeFrame:Symbol/Section
+
+# Available values: '1m', '5m', '15m', '30m', '1h', '3h', '6h', '12h', '1D', '1W', '14D', '1M'
+def get_bfx(symb):
+    symb=symb+'USD'
+    map_ = {"ALGO":"ALG"}
+    for k, v in map_.items():
+        if k in symb:
+            symb = symb.replace(k, v)
+    
+    endpoint = f"https://api-pub.bitfinex.com/v2/candles/trade:1D:t{symb.replace('-','')}/hist"
+    j = requests.get(endpoint).json()
+
+    df = pd.DataFrame(j)
+    df[0] = pd.to_datetime(df[0], unit='ms')
+    df.set_index(0, inplace=True)
+    df.sort_index(inplace=True)
+    df.columns = ('low','high','open','close','volume')
+    
+    return df
+
 if asset:
   
   
@@ -636,7 +658,7 @@ if asset:
   N = st.number_input("Realised vol window in days", value=30)
   
   assets = st.multiselect('Asset(s) historical vol to chart', options=tickers)      
-  R = st.number_input("Lookback window", value=180)
+  R = st.number_input("Lookback window", value=120)
   
   if st.button('Click for a realised vol calculation on asset'):
     vols = pd.DataFrame()
@@ -653,7 +675,10 @@ if asset:
             try:
                 source = get_cbs_hist(a)
             except:
-                st.write('No Data for {}'.format(a))
+                try:
+                    source = get_bfx(a)
+                except:    
+                    st.write('No Data for {}'.format(a))
         
         if len(source) > 0:    
                 data = source.copy() 
