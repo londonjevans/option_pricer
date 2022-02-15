@@ -647,13 +647,13 @@ if asset:
         try:      
             source = get_hist(a)
         except:    
-            st.write('No Data for {} from Alpha Vantage, trying Coinbase'.format(asset))
+            st.write('No Data for {} from Alpha Vantage, trying Coinbase'.format(a))
       
-        if source == None:
+        if source is None:
             try:
                 source = get_cbs_hist(a)
             except:
-                st.write('No Data for {}'.format(asset))
+                st.write('No Data for {}'.format(a))
         
         if len(source) > 0:    
                 data = source.copy() 
