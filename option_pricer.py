@@ -21,7 +21,12 @@ import websocket
 import json
 import collections
 
+if 'df' not in st.session_state:
+    st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta']) 
 
+if 'count' not in st.session_state:
+    st.session_state['count'] = 0
+    
 st.write("""
          
 # Option Pricer
@@ -532,7 +537,7 @@ if asset:
   
   
   if st.button('Calculate price'):
-
+    st.session_state.count += 1
     if custom_expiry > now.date():
       expiry = datetime(custom_expiry.year, custom_expiry.month, custom_expiry.day, hour_of_expiry_utc)
       fraction_of_year = (expiry-now).total_seconds()/60/60/24/365
@@ -645,9 +650,16 @@ if asset:
         st.write('') 
         st.write('If Client Buys:') 
         st.write('Blockchain.com sells, {} buys **{} {} ${:,} puts** expiring **{}** for **${:,} per {}**, total premium owed by {} to Blockchain.com **${:,}**. Settlement Date: **{}**'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
-
+  
+    st.session_state.df = st.session_state.df.append(pd.DataFrame({'Asset':asset, 'Spot':price, 'Forward':forward_price, 'P/C':option_type, 'Strike':c, 'Expiry':expiry, 'Bid':bid, 'Offer':offer}, index= [st.session_state.count]))
+    if option_type == 'C':
+        st.session_state.df.loc[st.session_state.df.index == st.session_state.count, 'Delta'] = cdelta
+    else:
+        st.session_state.df.loc[st.session_state.df.index == st.session_state.count, 'Delta'] = pdelta
+    st.write(st.session_state.df)
+  
   st.write('')   
-  st.write('') 
+  st.write('')
   st.write('') 
   st.write('') 
   st.write('') 
