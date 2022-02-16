@@ -22,7 +22,7 @@ import json
 import collections
 
 if 'df' not in st.session_state:
-    st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta', 'Timestamp']) 
+    st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta', 'PriceTime']) 
 
 if 'count' not in st.session_state:
     st.session_state['count'] = 0
@@ -651,7 +651,7 @@ if asset:
         st.write('If Client Buys:') 
         st.write('Blockchain.com sells, {} buys **{} {} ${:,} puts** expiring **{}** for **${:,} per {}**, total premium owed by {} to Blockchain.com **${:,}**. Settlement Date: **{}**'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
   
-    st.session_state.df = st.session_state.df.append(pd.DataFrame({'Asset':asset, 'Spot':price, 'Forward':forward_price, 'P/C':option_type, 'Strike':c, 'Expiry':expiry, 'Bid':bid, 'Offer':offer, 'Price Time':datetime.now()}, index= [st.session_state.count]))
+    st.session_state.df = st.session_state.df.append(pd.DataFrame({'Asset':asset, 'Spot':price, 'Forward':forward_price, 'P/C':option_type, 'Strike':c, 'Expiry':expiry, 'Bid':bid, 'Offer':offer, 'PriceTime':datetime.now()}, index= [st.session_state.count]))
     if option_type == 'C':
         st.session_state.df.loc[st.session_state.df.index == st.session_state.count, 'Delta'] = cdelta
     else:
