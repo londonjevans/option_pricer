@@ -716,5 +716,38 @@ if asset:
     plt.xticks(rotation=45)
     plt.show()
     st.pyplot(plt)            
-        
+  
+  if st.button('Generate Mill Mount Options'):     
+      
+      mid = st.number_input('Starting Price')
+      
+      desired_vol = st.number_input('Desired vol in % (e.g. for 80% choose 80')/100
+      
+      strike_increments = st.number_input('Strike Increments in % (e.g. 1 for 1%)')/100
+      
+      max_range = st.number_input('Max range in % (e.g. for 20% choose 20')/100
+          
+      tenors = [datetime.now()+timedelta(days=1), datetime.now()+timedelta(days=7), datetime.now()+timedelta(days=30), datetime.now()+timedelta(days=90)]
+      
+      slices = np.arange(0, max_range, strike_increments)
+      
+      call_strikes = [round((1+x) * mid, 2) for x in slices]
+      
+      put_strikes = [round((1-x) * mid, 2) for x in slices]
+      
+      MMdf = pd.DataFrame(columns=tenors, index=sorted(call_strikes, reverse=True)+put_strikes)
+      
+      for tenor in tenors:
+          
+          fraction_of_year = (tenor-now).total_seconds()/60/60/24/365
+          
+          
+          for c in call_strikes:
+              MMdf.loc[MMdf.index == c, tenor] = round(bs_call(S=mid, K=c, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
+              
+          for p  in put_strikes:
+              MMdf.loc[MMdf.index == p, tenor] = round(bs_put(S=mid, K=p, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
+      
+      st.write(MMdf)
+          
         
