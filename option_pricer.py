@@ -758,6 +758,8 @@ if asset:
       MMdf = pd.DataFrame(columns=tenors, index=sorted(call_strikes, reverse=True)+put_strikes)
       
       MMdf['Moneyness %'] = (MMdf.index/mid)*100
+      
+      MMdf['IV for pricing %'] = desired_vol*100
    
       for tenor in tenors:
               
