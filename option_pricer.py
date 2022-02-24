@@ -20,6 +20,18 @@ import seaborn as sns
 import websocket
 import json
 import collections
+import base64
+
+def get_table_download_link(df):
+    """Generates a link allowing the data in a given panda dataframe to be downloaded
+    in:  dataframe
+    out: href string
+    """
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+    href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
+    
+    return href
 
 if 'df' not in st.session_state:
     st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta', 'PriceTime']) 
@@ -112,18 +124,20 @@ def get_instruments():
     btc_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in btc_strikes_exp.items()}
     
     for d in [eth_strikes_exp, btc_strikes_exp]:
-        for k, v in d.items():
+        for k, v in d.copy().items():
             if k[0] == '0':
                 d[k[1:]] = d.pop(k)
     ES = list(set(eth_strikes))
     BS = list(set(btc_strikes))
     
     times_dic = dict(zip(expiries, timestamps))
+    
+    new_dic = {}
     for k, v in times_dic.items():
-        times_dic[k]= [v, (datetime.fromtimestamp(v)-datetime.now()).days/365.25]
+        new_dic[k]= [v, (datetime.fromtimestamp(v)-datetime.now()).days/365.25]
     
     st.write('Finished Getting Instrument Data')
-    return ES, BS, expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments
+    return ES, BS, expiries, eth_strikes_exp, btc_strikes_exp, new_dic, btc_instruments, eth_instruments
 
 ES, BS, str_expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments = get_instruments()
 
@@ -532,6 +546,18 @@ if asset:
   
   settlement_date = now+timedelta(days=2)
   
+  st.sidebar.write('MillMount Entry Section')
+  
+  st.sidebar.write('-------------------------')
+                  
+  mid = st.sidebar.number_input('Starting Price', value=price)
+  
+  desired_vol = st.sidebar.number_input('Desired vol in % (e.g. for 80% choose 80', value=o_vol)/100
+  
+  strike_increments = st.sidebar.number_input('Strike Increments in % (e.g. 1 for 1%)')/100
+  
+  max_range = st.sidebar.number_input('Max range in % (e.g. for 20% choose 20')/100
+  
   while settlement_date.weekday() > 4:
       settlement_date+=timedelta(days=1)
   
@@ -717,15 +743,9 @@ if asset:
     plt.show()
     st.pyplot(plt)            
   
+  
   if st.button('Generate Mill Mount Options'):     
       
-      mid = st.number_input('Starting Price')
-      
-      desired_vol = st.number_input('Desired vol in % (e.g. for 80% choose 80')/100
-      
-      strike_increments = st.number_input('Strike Increments in % (e.g. 1 for 1%)')/100
-      
-      max_range = st.number_input('Max range in % (e.g. for 20% choose 20')/100
           
       tenors = [datetime.now()+timedelta(days=1), datetime.now()+timedelta(days=7), datetime.now()+timedelta(days=30), datetime.now()+timedelta(days=90)]
       
@@ -737,17 +757,23 @@ if asset:
       
       MMdf = pd.DataFrame(columns=tenors, index=sorted(call_strikes, reverse=True)+put_strikes)
       
+   
       for tenor in tenors:
-          
-          fraction_of_year = (tenor-now).total_seconds()/60/60/24/365
-          
-          
-          for c in call_strikes:
-              MMdf.loc[MMdf.index == c, tenor] = round(bs_call(S=mid, K=c, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
               
-          for p  in put_strikes:
-              MMdf.loc[MMdf.index == p, tenor] = round(bs_put(S=mid, K=p, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
-      
+              fraction_of_year = (tenor-now).total_seconds()/60/60/24/365
+              
+              
+              for c in call_strikes:
+                  MMdf.loc[MMdf.index == c, tenor] = round(bs_call(S=mid, K=c, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
+                  
+              for p  in put_strikes:
+                  MMdf.loc[MMdf.index == p, tenor] = round(bs_put(S=mid, K=p, T=fraction_of_year, r=forward_yield, sigma=desired_vol), 2)
+          
       st.write(MMdf)
+      
+      st.write('Click to Download All Results in Full')
+        
+      st.markdown(get_table_download_link(MMdf.reset_index()), unsafe_allow_html=True)
+          
           
         
