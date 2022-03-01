@@ -242,7 +242,7 @@ tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
 tickers.append('MIR')
 tickers.append('LOOKS')
 tickers.append('ICP')
-
+tickers.append('NEAR')
 
 
 price = 0
