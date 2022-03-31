@@ -584,7 +584,7 @@ if asset:
             bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
             offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
     
-        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}** (**{}/{} {}**),      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}** (**{}/{} {}**),      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
         st.write('')
         st.write('If Client Sells:') 
@@ -610,7 +610,7 @@ if asset:
               offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol)   , 6)       
           pdelta = round(put_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
     
-          st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
+          st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
           st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
           st.write('')
           
@@ -639,7 +639,7 @@ if asset:
 
         cdelta = round(call_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
         st.write('') 
         st.write('If Client Sells:') 
@@ -666,7 +666,7 @@ if asset:
             
         pdelta = round(put_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}**, Future = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price, round(forward_price, 2),  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
+        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
         st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
         st.write('') 
         st.write('') 
