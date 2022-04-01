@@ -300,7 +300,7 @@ def get_spot(asset):
         return price
     except:
         st.write('Error retrieving spot price please enter manually')
-        price = st.number_input('Manual Spot Price:')
+        price = st.number_input('Manual Spot Price:', key='manual')
         return price
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=86400)
