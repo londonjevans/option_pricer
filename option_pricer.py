@@ -286,7 +286,8 @@ if not man_ticker:
 
 if man_ticker:
     asset = man_ticker
-
+    
+@st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=60)
 def get_spot(asset):
     
     try:
@@ -299,8 +300,8 @@ def get_spot(asset):
     
         return price
     except:
-        st.write('Error retrieving spot price please enter manually')
-        price = st.number_input('Manual Spot Price:', key='manual')
+        st.write('Error retrieving spot price please enter manually in top left')
+
         return price
 
 @st.cache(suppress_st_warning=True, allow_output_mutation=True, ttl=86400)
