@@ -231,7 +231,7 @@ def get_pk(price_data, window=30, trading_periods=365, clean=True):
     else:
         return result
 
-tickers = list(pd.read_csv('/Users/josevans/Library/Mobile Documents/com~apple~CloudDocs/digital_currency_list.csv')['currency code'])
+tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
 tickers.append('MIR')
 tickers.append('LOOKS')
 tickers.append('ICP')
