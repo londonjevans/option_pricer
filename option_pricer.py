@@ -22,6 +22,20 @@ import json
 import collections
 import base64
 
+class DeribitOption:
+    
+    def __init__(self, ticker, strikes_exp=collections.defaultdict(list), expiries=[], instruments=[], times_dict = dict()):
+        self.ticker=ticker
+        self.strikes_exp = strikes_exp
+        self.expiries=expiries
+        self.times_dict = times_dict
+
+if 'df' not in st.session_state:
+    st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta', 'PriceTime']) 
+
+if 'count' not in st.session_state:
+    st.session_state['count'] = 0
+    
 def get_table_download_link(df):
     """Generates a link allowing the data in a given panda dataframe to be downloaded
     in:  dataframe
@@ -32,114 +46,93 @@ def get_table_download_link(df):
     href = f'<a href="data:file/csv;base64,{b64}">Download csv file</a>'
     
     return href
-
-if 'df' not in st.session_state:
-    st.session_state['df'] = pd.DataFrame(columns=['Asset', 'P/C', 'Expiry', 'Strike', 'Bid', 'Offer','Spot', 'Forward', 'Delta', 'PriceTime']) 
-
-if 'count' not in st.session_state:
-    st.session_state['count'] = 0
     
 st.write("""
          
 # Option Pricer
 Enter the required fields
 """)
-@st.cache(ttl=2592000, suppress_st_warning=True)
+
+@st.cache(ttl=86400, suppress_st_warning=True)
 def get_instruments():
+    
+    DeribitBtc = DeribitOption("BTC")    
+    DeribitEth = DeribitOption("ETH")   
+    DeribitSol = DeribitOption("SOL")     
+
+    currentDeribitAssets = [DeribitBtc, DeribitEth, DeribitSol]
+        
     st.write('Getting Instrument Data')
     ws = websocket.create_connection('wss://www.deribit.com/ws/api/v2/public/subscribe')
     
-
-    expiries = []
-    eth_strikes = []
-    btc_strikes = []
-    btc_instruments = []
-    eth_instruments = []
-    btc_strikes_exp = collections.defaultdict(list)
-    eth_strikes_exp = collections.defaultdict(list)
-    
-    msg = \
-        {
-  "jsonrpc" : "2.0",
-  "id" : 7617,
-  "method" : "public/get_instruments",
-  "params" : {
+    options = currentDeribitAssets
+    masterTimestamps = []
       
-    "currency" : "BTC",
-    "kind" : "option",
-    "expired" : False
-    }
-      }
+    for opt in options:
+        
+        opt.strikes_exp = collections.defaultdict(list)
+        expiries = []
+        timestamps = []
+        
+        msg = \
+            {
+      "jsonrpc" : "2.0",
+      "id" : 7617,
+      "method" : "public/get_instruments",
+      "params" : {
+          
+        "currency" : opt.ticker,
+        "kind" : "option",
+        "expired" : False
+        }
+          }
+        
+        ws.send(json.dumps(msg))
+        try:
+            result = ws.recv()
+        except Exception as e:
+            print(e)
+        
+        data = pd.read_json(result).reset_index()
+        
+        for d in data.result:
+            opt.strikes_exp[d['expiration_timestamp']/1000].append(int(d['strike']))
+               
+            expiries.append(d['expiration_timestamp']/1000)
+            expiries = list(dict.fromkeys(expiries))
+            expiries = [n for n in expiries]
     
-    ws.send(json.dumps(msg))
-    try:
-        result = ws.recv()
-    except Exception as e:
-        print(e)
+        timestamps = expiries
+        for t in timestamps:
+            masterTimestamps.append(t)
+        expiries = [datetime.fromtimestamp(x).strftime('%d%b%y').upper() for x in expiries]
+        for i in range(len(expiries)):
+            if expiries[i][0] == '0':
+                expiries[i] = expiries[i][1:]
+        opt.expiries = expiries
+        
+       
+        opt.strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in opt.strikes_exp.items()}
+        
     
-    data = pd.read_json(result).reset_index()
+        for k, v in opt.strikes_exp.copy().items():
+                    if k[0] == '0':
+                        opt.strikes_exp[k[1:]] = opt.strikes_exp.pop(k)
     
-    for d in data.result:
-        btc_strikes_exp[d['expiration_timestamp']/1000].append(int(d['strike']))
-        btc_strikes.append(int(d['strike']))
-        expiries.append(d['expiration_timestamp']/1000)
-        btc_instruments.append(d['instrument_name'])
+        times_dic = dict(zip(expiries, timestamps))
+        
+        for k, v in times_dic.items():
+            opt.times_dict[k]= [v, (datetime.fromtimestamp(v)-datetime.now()).days/365.25]
     
-    expiries = list(dict.fromkeys(expiries))
-    expiries = [n for n in expiries]
-    
-    
-    
-    msg = \
-        {
-  "jsonrpc" : "2.0",
-  "id" : 7617,
-  "method" : "public/get_instruments",
-  "params" : {
-    "currency" : "ETH",
-    "kind" : "option",
-    "expired" : False
-    }
-      }
-    
-    ws.send(json.dumps(msg))
-    try:
-        result = ws.recv()
-    except Exception as e:
-        print(e)
-    
-    data = pd.read_json(result).reset_index()
-    
-    for d in data.result:
-        eth_strikes_exp[d['expiration_timestamp']/1000].append(int(d['strike']))
-        eth_strikes.append(int(d['strike']))
-        eth_instruments.append(d['instrument_name'])
-    
-    timestamps = expiries
-    expiries = [datetime.fromtimestamp(x).strftime('%d%b%y').upper() for x in expiries]
-    for i in range(len(expiries)):
-        if expiries[i][0] == '0':
-            expiries[i] = expiries[i][1:]
-    eth_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in eth_strikes_exp.items()}
-    btc_strikes_exp = {datetime.fromtimestamp(x).strftime('%d%b%y').upper():v for x, v in btc_strikes_exp.items()}
-    
-    for d in [eth_strikes_exp, btc_strikes_exp]:
-        for k, v in d.copy().items():
-            if k[0] == '0':
-                d[k[1:]] = d.pop(k)
-    ES = list(set(eth_strikes))
-    BS = list(set(btc_strikes))
-    
-    times_dic = dict(zip(expiries, timestamps))
-    
-    new_dic = {}
-    for k, v in times_dic.items():
-        new_dic[k]= [v, (datetime.fromtimestamp(v)-datetime.now()).days/365.25]
+    masterTimestamps = list(set(masterTimestamps))    
     
     st.write('Finished Getting Instrument Data')
-    return ES, BS, expiries, eth_strikes_exp, btc_strikes_exp, new_dic, btc_instruments, eth_instruments
+    
+    return masterTimestamps, DeribitBtc, DeribitEth, DeribitSol
 
-ES, BS, str_expiries, eth_strikes_exp, btc_strikes_exp, times_dic, btc_instruments, eth_instruments = get_instruments()
+expiries, DeribitBtc, DeribitEth, DeribitSol = get_instruments()
+
+currentDeribitAssets = [DeribitBtc, DeribitEth, DeribitSol]
 
 # def get_vols(asset, d_expiry, d_strike, option):
     
@@ -238,7 +231,7 @@ def get_pk(price_data, window=30, trading_periods=365, clean=True):
     else:
         return result
 
-tickers = list(pd.read_csv('digital_currency_list.csv')['currency code'])
+tickers = list(pd.read_csv('/Users/josevans/Library/Mobile Documents/com~apple~CloudDocs/digital_currency_list.csv')['currency code'])
 tickers.append('MIR')
 tickers.append('LOOKS')
 tickers.append('ICP')
@@ -246,7 +239,7 @@ tickers.append('NEAR')
 
 
 price = 0
-expiries = [v[0] for k, v in times_dic.items()]
+
 
 def reset_price():
     price=0
@@ -281,8 +274,6 @@ man_ticker = st.sidebar.text_input('Enter manual ticker').upper()
 
 if not man_ticker:
     asset = st.sidebar.selectbox("Asset - e.g. ETH", options=tickers, index=tickers.index('ETH'), on_change=reset_price)
-
-
 
 if man_ticker:
     asset = man_ticker
@@ -419,7 +410,6 @@ def get_bfx(symb):
 
 if asset:
   
-  
   while price == 0:
     try:
       price = get_cbs(asset)
@@ -460,7 +450,6 @@ if asset:
 
   fraction_of_year = (expiry-now).total_seconds()/60/60/24/365
   
-
   if now.date() > custom_expiry:
         dbt_expiry = min(expiries, key=lambda x:abs(x-expiry.timestamp()))
   else:
@@ -471,7 +460,7 @@ if asset:
   if str_dbt_expi[0] == '0':
       str_dbt_expi = str_dbt_expi[1:]
   
-  fraction_dbit = times_dic[str_dbt_expi][1]
+  fraction_dbit = DeribitBtc.times_dict[str_dbt_expi][1]
 
   custom_strike = st.sidebar.number_input("Custom Strike", key='first', on_change=update_first)
   
@@ -480,36 +469,37 @@ if asset:
     default_moneyness = 95
   else: 
     default_moneyness = round(custom_strike/price*100,2)
+  
+  success = False  
     
-  
-  
-  if asset in ['BTC', 'ETH']:
+  if asset in ['BTC', 'ETH', 'SOL']:
       
-      if asset == 'BTC':
-          strikes = btc_strikes_exp[str_dbt_expi]
-      else:
-          strikes = eth_strikes_exp[str_dbt_expi]
-          
-      dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*price)))
+      for cAsset in currentDeribitAssets:
+          if asset == cAsset.ticker:
+              try:
+                  strikes = cAsset.strikes_exp[str_dbt_expi]
+                  dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*price)))
       
-      ins = '{}-{}-{}-{}'.format(asset, str_dbt_expi, dbt_strike, option_type)
+                  ins = '{}-{}-{}-{}'.format(asset, str_dbt_expi, dbt_strike, option_type)
      
-      try:
-        b_vol, underlying = get_single(ins)
+                  try:
+                      b_vol, underlying = get_single(ins)
         
-        o_vol=b_vol+spread*100
-        b_vol=b_vol-spread*100
-        fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
+                      o_vol=b_vol+spread*100
+                      b_vol=b_vol-spread*100
+                      fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
         
-      except:
-        b_vol=70-spread*100
-        o_vol = 70+spread*100
-
-        
-  else:
+                  except:
+                      b_vol=70-spread*100
+                      o_vol = 70+spread*100
+                  success = True
+              except:
+                  break
+    
+  if success == False:
       
       eth_price=get_cbs('ETH')
-      strikes = eth_strikes_exp[str_dbt_expi]
+      strikes = DeribitEth.strikes_exp[str_dbt_expi]
       dbt_strike = min(strikes, key=lambda x:abs(x-(default_moneyness/100*eth_price)))
       ins = '{}-{}-{}-{}'.format('ETH', str_dbt_expi, dbt_strike, option_type)
       
@@ -585,16 +575,17 @@ if asset:
             bid = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol), 6)
             offer = round(bs_call(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol), 6)
     
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${}** (**{}/{} {}**),      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
-        st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
+        st.write('Expiry  = {}. {} Spot = \${} -----    \${} strike calls - moneyness {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100)))
+        st.write('\${}/\${} ({}/{} {}),      vols = {}%/{}%, delta = {}%'.format(bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Notional = \${:,}, Notional Coin = {:,}, \$ Delta = \${:,}, Coin Delta = {:,},     (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100, 2)*-1))
         st.write('')
         st.write('If Client Sells:') 
-        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium ${:,} ({} {}). IM owed by {} to Blockchain.com is **{:,} {}**.  Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, asset, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round((.3*notional_coin)), asset, settlement_date))
+        st.write('{} sells, Blockchain.com buys {} {} \${:,} calls expiring {} for \${:,} per {}, total premium \${:,} ({} {}). IM owed by {} to Blockchain.com is {:,} {}.  Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, asset, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round((.3*notional_coin)), asset, settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys {} {} ${:,} calls expiring {} for ${:,} per {}, total premium owed by {} to Blockchain.com ${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
+        st.write('Blockchain.com sells, {} buys {} {} \${:,} calls expiring {} for \${:,} per {}, total premium owed by {} to Blockchain.com \${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
       else:
           if price > 100:  
@@ -611,16 +602,18 @@ if asset:
               offer = round(bs_put(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=offer_vol)   , 6)       
           pdelta = round(put_delta(S=price, K=custom_strike, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
     
-          st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----        **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), pdelta))
-          st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
+          st.write('Expiry  = {}. {} Spot = \${} -----    \${} strike puts - moneyness {}% '.format(expiry, asset, price,  custom_strike, round(custom_strike/price*100)))
+          st.write('\${}/\${} ({}/{} {}),      vols = {}%/{}%, delta = {}%'.format(bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
+
+          st.write('Notional = \${:,}, Notional Coin = {:,}, Delta = \${:,}, Coin Delta = {:,},       (note {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100, 2)*-1))
           st.write('')
           
-          st.write('{} sells, Blockchain.com buys **{} {} ${:,} puts** expiring **{}** for **${:,}**, total premium ${:,} ({} {}). IM owed by {} to Blockchain.com is **${:,}**,  net of premium = **${:,}**. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client,  round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), settlement_date))
+          st.write('{} sells, Blockchain.com buys {} {} \${:,} puts expiring {} for \${:,}, total premium \${:,} ({} {}). IM owed by {} to Blockchain.com is \${:,},  net of premium = \${:,}. Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,bid, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client,  round(.3*notional_coin*custom_strike), round((.3*notional_coin*custom_strike)-(bid*notional_coin)), settlement_date))
           st.write('') 
           st.write('') 
           st.write('') 
           st.write('If Client Buys:') 
-          st.write('Blockchain.com sells, {} buys **{} {} ${:,} puts** expiring **{}** for **${:,} per {}**, total premium owed by {} to Blockchain.com ${:,}.Settlement Date: **{}**'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
+          st.write('Blockchain.com sells, {} buys {} {} \${:,} puts expiring {} for \${:,} per {}, total premium owed by {} to Blockchain.com \${:,}.Settlement Date: {}'.format(client, notional_coin, asset, custom_strike, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
 
     else:
@@ -640,16 +633,17 @@ if asset:
 
         cdelta = round(call_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike calls - moneyness {}% ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
-        st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
+        st.write('Expiry  = {}. {} Spot = \${} -----    \${} strike calls - moneyness {}% '.format(expiry, asset, price,  c, round(c/price*100)))
+        st.write(' \${}/\${} ({}/{} {}),      vols = {}%/{}%, delta = {}%'.format(bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2), cdelta))
+        st.write('Notional = \${:,}, Notional Coin = {:,}, \$ Delta = \${:,}, Coin Delta = {:,}, (note    {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*cdelta/100, 2), round(notional_coin*cdelta/100, 2), round(notional_coin*cdelta/100*-1, 2)))
         st.write('') 
         st.write('If Client Sells:') 
-        st.write('{} sells, Blockchain.com buys {} {} ${:,} calls expiring **{}** for ${:,} per {}, total premium ${:,} ({} {}). IM owed by {} to Blockchain.com is **{:,} {}**. Settlement Date: **{}**'.format(client, notional_coin, asset, c, expiry,bid, asset, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round(.3*notional_coin), asset, settlement_date))
+        st.write('{} sells, Blockchain.com buys {} {} \${:,} calls expiring {} for \${:,} per {}, total premium \${:,} ({} {}). IM owed by {} to Blockchain.com is {:,} {}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, asset, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round(.3*notional_coin), asset, settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys **{} {} ${:,} calls** expiring **{}** for **${:,} per {}**, total premium owed by {} to Blockchain.com **${:,}**. Settlement Date: **{}**'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
+        st.write('Blockchain.com sells, {} buys {} {} \${:,} calls expiring {} for \${:,} per {}, total premium owed by {} to Blockchain.com \${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
 
       else:
         if price > 100:  
@@ -667,16 +661,17 @@ if asset:
             
         pdelta = round(put_delta(S=price, K=c, T=fraction_of_year, r=forward_yield, sigma=bid_vol)*100, 2)
 
-        st.write('Expiry  = {}. {} Spot = **{}** -----    **{}** strike puts - moneyness {}%  ----       **${}/${} ({}/{} {})**,      vols = **{}%/{}%**, delta = {}%'.format(expiry, asset, price,  c, round(c/price*100), bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
-        st.write('Notional = ${:,}, Notional Coin = {:,}, $ Delta = ${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
+        st.write('Expiry  = {}. {} Spot = \${} -----    \${} strike puts - moneyness {}%'.format(expiry, asset, price,  c, round(c/price*100)))
+        st.write('\${}/\${} ({}/{} {}),      vols = {}%/{}%, delta = {}%'.format(bid, offer, round(bid/forward_price, 4), round(offer/forward_price, 4), asset, round((bid_vol)*100, 2), round((offer_vol)*100, 2),pdelta))
+        st.write('Notional = \${:,}, Notional Coin = {:,}, \$ Delta = \${:,}, Coin Delta = {:,},   (note     {:,} coin delta if selling the option)'.format(notional, notional_coin, round(notional*pdelta/100, 2), round(notional_coin*pdelta/100, 2), round(notional_coin*pdelta/100*-1, 2)))
         st.write('') 
         st.write('') 
-        st.write('{} sells, Blockchain.com buys **{} {} ${:,} puts** expiring **{}** for **${:,}**, total premium ${:,} ({} {}). IM owed by {} to Blockchain.com is **${:,}**, net of premium = **${:,}**. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), settlement_date))
+        st.write('{} sells, Blockchain.com buys {} {} \${:,} puts expiring {} for \${:,}, total premium \${:,} ({} {}). IM owed by {} to Blockchain.com is \${:,}, net of premium = \${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,bid, round(bid*notional_coin), round(bid/forward_price, 4)*notional_coin, asset, client, round(.3*notional_coin*c), round((.3*notional_coin*c)-(bid*notional_coin)), settlement_date))
         st.write('') 
         st.write('') 
         st.write('') 
         st.write('If Client Buys:') 
-        st.write('Blockchain.com sells, {} buys **{} {} ${:,} puts** expiring **{}** for **${:,} per {}**, total premium owed by {} to Blockchain.com **${:,}**. Settlement Date: **{}**'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
+        st.write('Blockchain.com sells, {} buys {} {} \${:,} puts expiring {} for \${:,} per {}, total premium owed by {} to Blockchain.com \${:,}. Settlement Date: {}'.format(client, notional_coin, asset, c, expiry,offer, asset, client, round(offer*notional_coin), settlement_date))
   
     st.session_state.df = st.session_state.df.append(pd.DataFrame({'Asset':asset, 'Spot':price, 'Forward':forward_price, 'P/C':option_type, 'Strike':c, 'Expiry':expiry, 'Bid':bid, 'Offer':offer, 'PriceTime':datetime.now()}, index= [st.session_state.count]))
     if option_type == 'C':
