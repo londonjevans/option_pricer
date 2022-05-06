@@ -488,11 +488,12 @@ if asset:
                       o_vol=b_vol+spread*100
                       b_vol=b_vol-spread*100
                       fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
-        
+                      success = True
                   except:
+                      st.write('Error getting Deribit pricing back - input IVs manually')
                       b_vol=70-spread*100
                       o_vol = 70+spread*100
-                  success = True
+                  
               except:
                   break
     
