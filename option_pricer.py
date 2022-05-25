@@ -358,9 +358,14 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
         except Exception as e:
             print(e)
             return 70
-    except:
+    except Exception as e:
+        print(e)
         st.write('Error getting data from Deribit, please continue with manual inputs')
-        return alt_mid
+        try:
+            return alt_mid
+        except Exception as e:
+            print(e)
+            return 70
 
 def get_cbs(asset, gran=60):
     now = datetime.now()
