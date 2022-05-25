@@ -353,8 +353,11 @@ def get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol):
         
         st.write('''Based on current IV Premium/DIscount for ETH in relevant strike/expiry, 
                  Mid Price IV for {} is {}%'''.format(asset, alt_mid))
-        
-        return alt_mid
+        try:
+            return alt_mid
+        except Exception as e:
+            print(e)
+            return 70
     except:
         st.write('Error getting data from Deribit, please continue with manual inputs')
         return alt_mid
