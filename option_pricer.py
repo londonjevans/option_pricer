@@ -444,7 +444,7 @@ if asset:
   
   custom_expiry = st.sidebar.date_input("Custom Expiry Date - N.B. Do NOT need both this and Expiry days, BUT you do need to make sure the UTC hour of expiry is correct", (now-timedelta(days=1)))
 
-  hour_of_expiry_utc = st.sidebar.number_input("UTC Hour of Expiry", value=15)
+  hour_of_expiry_utc = st.sidebar.number_input("UTC Hour of Expiry", value=8)
   
   
   if custom_expiry > now.date():
