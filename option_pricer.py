@@ -437,9 +437,9 @@ if asset:
   
   now = datetime.now()
   
-  spread = st.sidebar.number_input("Spread each side", value=3)/100
+  spread = st.sidebar.number_input("Spread % each side", value=3)/100
   
-  drift = st.sidebar.number_input("Drift - shift bid & offer up or down, minus for down", value=0)
+  drift = st.sidebar.number_input("Drift % - shift bid & offer up or down, minus for down", value=0)
   
   days_to_expiry = st.sidebar.number_input("Days to Expiry", value=7)
   
