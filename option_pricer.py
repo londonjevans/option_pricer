@@ -439,6 +439,8 @@ if asset:
   
   spread = st.sidebar.number_input("Spread each side", value=3)/100
   
+  drift = st.sidebar.number_input("Drift - shift bid & offer up or down, minus for down", value=0)
+  
   days_to_expiry = st.sidebar.number_input("Days to Expiry", value=7)
   
   custom_expiry = st.sidebar.date_input("Custom Expiry Date - N.B. Do NOT need both this and Expiry days, BUT you do need to make sure the UTC hour of expiry is correct", (now-timedelta(days=1)))
@@ -493,14 +495,14 @@ if asset:
                   try:
                       b_vol, underlying = get_single(ins)
         
-                      o_vol=b_vol+spread*100
-                      b_vol=b_vol-spread*100
+                      o_vol=b_vol+spread*100+drift
+                      b_vol=b_vol-spread*100+drift
                       fwd_yield = (((underlying-price)/price)/fraction_dbit)*100
                       success = True
                   except:
                       st.write('Error getting Deribit pricing back - input IVs manually')
-                      b_vol=70-spread*100
-                      o_vol = 70+spread*100
+                      b_vol=70-spread*100+drift
+                      o_vol = 70+spread*100+drift
                   
               except:
                   break
@@ -522,8 +524,8 @@ if asset:
           fwd_yield = 0
           
       alt_vol = get_alt_vol(asset, str_dbt_expi, dbt_strike,option_type, eth_vol, days_to_expiry)
-      b_vol = alt_vol-spread*100
-      o_vol = alt_vol+spread*100
+      b_vol = alt_vol-spread*100+drift
+      o_vol = alt_vol+spread*100+drift
 
   
   forward_yield = st.sidebar.number_input("Forward Yield - e.g. for 5% input 5", value=fwd_yield)/100    
